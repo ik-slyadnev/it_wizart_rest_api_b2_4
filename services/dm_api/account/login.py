@@ -1,48 +1,55 @@
 from common.rest_client import RestClient
 
+
 class LoginApi(RestClient):
-    def post_v1_account_login(self, login: str, password: str, remember_me: bool = True):
+
+    def post_v1_account_login(self, json: dict):
         """
         Авторизация пользователя
 
-        :param login: Логин пользователя
-        :param password: Пароль пользователя
-        :param remember_me: Флаг запоминания сессии
+        :param json: {
+            "login": str,
+            "password": str,
+            "rememberMe": bool
+        }
         :return: Response
         """
-        payload = {
-            "login": login,
-            "password": password,
-            "rememberMe": remember_me
-        }
         response = self.post(
             path="/v1/account/login",
-            json=payload
+            json=json
         )
         return response
 
-    def delete_v1_account_login(self, headers=None):
+    def delete_v1_account_login(self, **kwargs):
         """
         Выход из системы (логаут)
 
-        :param headers: Заголовки запроса, должен содержать X-Dm-Auth-Token
+        :param kwargs: {
+            headers: dict, optional {
+                "X-Dm-Auth-Token": str
+            }
+        }
         :return: Response
         """
         response = self.delete(
             path="/v1/account/login",
-            headers=headers
+            **kwargs
         )
         return response
 
-    def delete_v1_account_login_all(self, headers=None):
+    def delete_v1_account_login_all(self, **kwargs):
         """
         Выход из системы на всех устройствах
 
-        :param headers: Заголовки запроса, должен содержать X-Dm-Auth-Token
+        :param kwargs: {
+            headers: dict, optional {
+                "X-Dm-Auth-Token": str
+            }
+        }
         :return: Response
         """
         response = self.delete(
             path="/v1/account/login/all",
-            headers=headers
+            **kwargs
         )
         return response

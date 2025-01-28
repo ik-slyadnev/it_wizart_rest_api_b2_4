@@ -2,7 +2,6 @@ import json
 from faker import Faker
 
 
-
 class AccountHelper:
     def __init__(self, dm_api_facade, mailhog_facade):
         self.dm_api_facade = dm_api_facade
@@ -16,10 +15,12 @@ class AccountHelper:
         :param password: Пароль пользователя
         :return: Response
         """
-        response = self.dm_api_facade.login_api.post_v1_account_login(
-            login=login,
-            password=password
-        )
+        payload = {
+            "login": login,
+            "password": password,
+            "rememberMe": True
+        }
+        response = self.dm_api_facade.login_api.post_v1_account_login(json=payload)
 
         auth_token = response.headers["x-dm-auth-token"]
         headers = {
@@ -56,11 +57,12 @@ class AccountHelper:
         :param email: Email пользователя
         :param password: Пароль пользователя
         """
-        response = self.dm_api_facade.account_api.post_v1_account(
-            login=login,
-            email=email,
-            password=password
-        )
+        payload = {
+            "login": login,
+            "email": email,
+            "password": password
+        }
+        response = self.dm_api_facade.account_api.post_v1_account(json=payload)
         assert response.status_code == 201, f"Не удалось зарегистрировать пользователя {login}"
 
     def get_registration_token(self, login: str):
@@ -83,8 +85,9 @@ class AccountHelper:
         """
         Активация аккаунта по токену
         """
-        response = self.dm_api_facade.account_api.put_v1_account_token(token)
+        response = self.dm_api_facade.account_api.put_v1_account_token(token=token)
         assert response.status_code == 200, f"Не удалось активировать аккаунт"
+        return response
 
     def get_current_user(self):
         """
@@ -93,23 +96,37 @@ class AccountHelper:
         response = self.dm_api_facade.account_api.get_v1_account()
         return response
 
-    def reset_password(self, login: str, email: str):
+    def change_password(self, login: str, email: str, old_password: str, new_password: str):
         """
-        Запрос на сброс пароля и получение reset token
+        Полный процесс смены пароля пользователя включая подтверждение
 
         Args:
             login: логин пользователя
             email: email пользователя
+            old_password: текущий пароль
+            new_password: новый пароль
 
         Returns:
-            str: токен для сброса пароля
+            Response: ответ сервера после активации нового пароля
         """
-        response = self.dm_api_facade.account_api.post_v1_account_password(
-            login=login,
-            email=email
-        )
-        assert response.status_code == 200, "Ошибка запроса на сброс пароля"
+        # Инициируем смену пароля
+        change_payload = {
+            "oldPassword": old_password,
+            "newPassword": new_password
+        }
+        change_response = self.dm_api_facade.account_api.put_v1_account_password(json=change_payload)
+        assert change_response.status_code == 200, \
+            f"Ошибка при инициации смены пароля. Код ответа: {change_response.status_code}"
 
+        # Запрашиваем токен подтверждения
+        reset_payload = {
+            "login": login,
+            "email": email
+        }
+        reset_response = self.dm_api_facade.account_api.post_v1_account_password(json=reset_payload)
+        assert reset_response.status_code == 200, "Ошибка запроса на сброс пароля"
+
+        # Получаем токен из письма
         messages = self.mailhog_facade.mailhog_api.get_api_v2_messages(limit=1)
         reset_token = None
         for item in messages['items']:
@@ -120,27 +137,9 @@ class AccountHelper:
                 break
 
         assert reset_token is not None, f"Токен сброса пароля для пользователя {login} не был получен"
-        return reset_token
 
-    def change_password(self, password: str, new_password: str):
-        """
-        Смена пароля пользователя с использованием reset token
+        # Активируем новый пароль
+        activation_response = self.activate_account(reset_token)
+        assert activation_response.status_code == 200, "Не удалось активировать новый пароль"
 
-        Args:
-            login: логин пользователя
-            token: токен для сброса пароля
-            password: текущий пароль
-            new_password: новый пароль
-
-        Returns:
-            Response: ответ сервера
-        """
-        response = self.dm_api_facade.account_api.put_v1_account_password(
-            old_password=password,
-            new_password=new_password
-        )
-
-        assert response.status_code == 200, \
-            f"Ошибка при смене пароля. Код ответа: {response.status_code}"
-
-        return response
+        return activation_response

@@ -12,10 +12,12 @@ class LoginHelper:
         :param password: Пароль пользователя
         :return: Response объект с результатом авторизации
         """
-        response = self.dm_api_facade.login_api.post_v1_account_login(
-            login=login,
-            password=password
-        )
+        payload = {
+            "login": login,
+            "password": password,
+            "rememberMe": True
+        }
+        response = self.dm_api_facade.login_api.post_v1_account_login(json=payload)
         return response
 
     def _clear_auth_tokens(self):

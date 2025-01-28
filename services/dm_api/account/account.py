@@ -2,23 +2,20 @@ from common.rest_client import RestClient
 
 
 class AccountApi(RestClient):
-    def post_v1_account(self, login: str, email: str, password: str):
+    def post_v1_account(self, json: dict):
         """
         Регистрация нового аккаунта.
 
-        :param login: Логин пользователя
-        :param email: Email пользователя
-        :param password: Пароль пользователя
+        :param json: {
+            "login": str,
+            "email": str,
+            "password": str
+        }
         :return: Response
         """
-        payload = {
-            "login": login,
-            "email": email,
-            "password": password
-        }
         response = self.post(
             path="/v1/account",
-            json=payload
+            json=json
         )
         return response
 
@@ -34,71 +31,65 @@ class AccountApi(RestClient):
         )
         return response
 
-    def put_v1_account_email(self, login: str, new_email: str, password: str):
+    def put_v1_account_email(self, json: dict):
         """
         Смена email пользователя.
 
-        :param login: Логин пользователя
-        :param password: Пароль пользователя
-        :param new_email: Новый email пользователя
+        :param json: {
+            "login": str,
+            "email": str,
+            "password": str
+        }
         :return: Response
         """
-        payload = {
-            "login": login,
-            "email": new_email,
-            "password": password
-        }
         response = self.put(
             path="/v1/account/email",
-            json=payload
+            json=json
         )
         return response
 
-    def get_v1_account(self):
+    def get_v1_account(self, **kwargs):
         """
         Получение информации о текущем пользователе
+
+        Args:
+            **kwargs: Дополнительные параметры запроса (headers, params и т.д.)
         """
         response = self.get(
-            path="/v1/account"
+            path="/v1/account",
+            **kwargs
         )
         return response
 
-    def post_v1_account_password(self, login: str, email: str):
+    def post_v1_account_password(self, json: dict):
         """
         Запрос на сброс пароля
 
-        :param login: Логин пользователя
-        :param email: Email пользователя
+        :param json: {
+            "login": str,
+            "email": str
+        }
         :return: Response
         """
-        payload = {
-            "login": login,
-            "email": email
-        }
         response = self.post(
             path="/v1/account/password",
-            json=payload
+            json=json
         )
         return response
 
-    def put_v1_account_password(self, old_password: str, new_password: str, reset_token: str = None):
+    def put_v1_account_password(self, json: dict):
         """
         Смена пароля пользователя
 
-        :param old_password: Текущий пароль
-        :param new_password: Новый пароль
-        :param reset_token: Токен сброса пароля (опционально)
+        :param json: {
+            "oldPassword": str,
+            "newPassword": str,
+            "resetToken": str (optional)
+        }
         :return: Response
         """
-        payload = {
-            "oldPassword": old_password,
-            "newPassword": new_password
-        }
-        if reset_token:
-            payload["resetToken"] = reset_token
-
         response = self.put(
             path="/v1/account/password",
-            json=payload
+            json=json
         )
         return response
